@@ -9,7 +9,7 @@ export interface ParsedContact {
 
 export async function parseExcelFile(buffer: Buffer): Promise<ParsedContact[]> {
   const workbook = new ExcelJS.Workbook()
-  await workbook.xlsx.load(buffer)
+  await workbook.xlsx.load(buffer as any)
 
   const worksheet = workbook.worksheets[0]
   if (!worksheet) throw new Error('No worksheet found in the Excel file.')
