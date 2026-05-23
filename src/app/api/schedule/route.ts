@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Client as QStash } from '@upstash/qstash'
 
 export const runtime = 'nodejs'
 
@@ -29,7 +28,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid scheduledAt date' }, { status: 400 })
     }
 
-    // Upsert contacts
     const savedContacts = await Promise.all(
       contacts.map(c =>
         prisma.contact.upsert({
@@ -63,18 +61,6 @@ export async function POST(req: NextRequest) {
         status:    'PENDING',
       })),
     })
-
-    // Tell QStash to call /api/cron at exactly the scheduled time
-    if (process.env.QSTASH_TOKEN) {
-      const qstash = new QStash({ token: process.env.QSTASH_TOKEN })
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      await qstash.publishJSON({
-        url: `${appUrl}/api/cron`,
-        headers: { 'x-cron-secret': process.env.CRON_SECRET! },
-        notBefore: Math.floor(scheduledDate.getTime() / 1000),
-        body: { jobId: job.id },
-      })
-    }
 
     return NextResponse.json({ success: true, jobId: job.id })
   } catch (error: any) {
